@@ -14,7 +14,7 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
     private List<BaseViewModel> mViewModels = new ArrayList<>();
     private VMObserver mObserver;
 
-    public void setObserver(VMObserver observer) {
+    void setObserver(VMObserver observer) {
         mObserver = observer;
     }
 
@@ -47,7 +47,8 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
 
     @NonNull
     @Override
-    public <T> T[] toArray(T[] ts) {
+    public <T> T[] toArray(@NonNull T[] ts) {
+        //noinspection SuspiciousToArrayCall
         return mViewModels.toArray(ts);
     }
 
@@ -97,7 +98,11 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
 
     @Override
     public boolean removeAll(@NonNull Collection<?> collection) {
-        return mViewModels.removeAll(collection);
+        boolean removed = mViewModels.removeAll(collection);
+        if (removed && mObserver != null) {
+            mObserver.onDataSetChange();
+        }
+        return removed;
     }
 
     @Override
