@@ -1,6 +1,5 @@
 package io.agileninja.vmrecycler;
 
-
 import android.support.v4.util.ArrayMap;
 import android.support.v7.widget.RecyclerView;
 import android.view.ViewGroup;
@@ -15,18 +14,25 @@ public class VMAdapter extends RecyclerView.Adapter<BaseViewHolder> implements V
     }
 
     public void setViewModelCollection(ViewModelCollection viewModelCollection) {
-        mViewModelCollection = viewModelCollection;
-        viewModelCollection.setObserver(this);
-        viewTypes.clear();
-        for (BaseViewModel baseViewModel : mViewModelCollection) {
-            viewTypes.put(baseViewModel.getClass(), baseViewModel);
+        if (viewModelCollection != null) {
+            viewModelCollection.setObserver(this);
+            mViewModelCollection = viewModelCollection;
+            viewTypes.clear();
+            for (BaseViewModel baseViewModel : mViewModelCollection) {
+                viewTypes.put(baseViewModel.getClass(), baseViewModel);
+            }
+            notifyDataSetChanged();
         }
-        notifyDataSetChanged();
     }
 
     @Override
     public BaseViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return viewTypes.valueAt(viewType).getViewHolder(parent);
+        BaseViewModel viewModel = viewTypes.valueAt(viewType);
+        if (viewModel != null) {
+            return viewModel.getViewHolder(parent);
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -55,27 +61,30 @@ public class VMAdapter extends RecyclerView.Adapter<BaseViewHolder> implements V
     }
 
     @Override
-    public void onInserted(int index) {
+    public void onInserted(int index, BaseViewModel viewModel) {
+        viewTypes.put(viewModel.getClass(), viewModel);
         notifyItemInserted(index);
     }
 
     @Override
-    public void onInsertedRange(int fromIndex, int itemCount) {
-        notifyItemRangeInserted(fromIndex, itemCount);
+    public void onRemoved(int index, BaseViewModel viewModel) {
+        if (viewModel != null) {
+            boolean noLongerExists = true;
+            for (BaseViewModel model : mViewModelCollection) {
+                if (model.getClass().equals(viewModel.getClass())) {
+                    noLongerExists = false;
+                }
+            }
+
+            if (noLongerExists) {
+                viewTypes.remove(viewModel.getClass());
+            }
+            notifyItemRemoved(index);
+        }
     }
 
     @Override
-    public void onRemoved(int index) {
-        notifyItemRemoved(index);
-    }
-
-    @Override
-    public void onRemovedRange(int fromIndex, int itemCount) {
-        notifyItemRangeRemoved(fromIndex, itemCount);
-    }
-
-    @Override
-    public void onDataSetChange() {
-        notifyDataSetChanged();
+    public void onDataSetChange(ViewModelCollection viewModelCollection) {
+        setViewModelCollection(viewModelCollection);
     }
 }

@@ -1,6 +1,5 @@
 package io.agileninja.vmrecycler;
 
-
 import android.support.annotation.NonNull;
 
 import java.util.ArrayList;
@@ -56,18 +55,20 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
     public boolean add(BaseViewModel baseViewModel) {
         boolean added = mViewModels.add(baseViewModel);
         if (added && mObserver != null) {
-            mObserver.onInserted(mViewModels.size() - 1);
+            mObserver.onInserted(mViewModels.size() - 1, baseViewModel);
         }
         return added;
     }
 
     @Override
     public boolean remove(Object o) {
-        //noinspection SuspiciousMethodCalls
+        if (!(o instanceof BaseViewModel)) {
+            return false;
+        }
         int index = mViewModels.indexOf(o);
         boolean removed = mViewModels.remove(o);
         if (removed && mObserver != null) {
-            mObserver.onRemoved(index);
+            mObserver.onRemoved(index, (BaseViewModel) o);
         }
         return removed;
     }
@@ -79,28 +80,38 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
 
     @Override
     public boolean addAll(@NonNull Collection<? extends BaseViewModel> collection) {
-        int index = mViewModels.size();
-        boolean added = mViewModels.addAll(collection);
-        if (added && mObserver != null) {
-            mObserver.onInsertedRange(index, collection.size());
+        boolean added = false;
+        boolean add;
+        for (Object o : collection) {
+            add = add((BaseViewModel) o);
+            added = add || added;
         }
         return added;
     }
 
     @Override
     public boolean addAll(int i, @NonNull Collection<? extends BaseViewModel> collection) {
-        boolean added = mViewModels.addAll(i, collection);
-        if (added && mObserver != null) {
-            mObserver.onInsertedRange(i, collection.size());
+        try {
+            for (Object o : collection) {
+                add(i++, (BaseViewModel) o);
+            }
+        } catch (Exception e) {
+            return false;
         }
-        return added;
+        return true;
     }
 
     @Override
     public boolean removeAll(@NonNull Collection<?> collection) {
-        boolean removed = mViewModels.removeAll(collection);
-        if (removed && mObserver != null) {
-            mObserver.onDataSetChange();
+        boolean removed = false;
+        for (Object o : collection) {
+            if (!(o instanceof BaseViewModel)) {
+                continue;
+            }
+            if (contains(o)) {
+                boolean remove = remove(o);
+                removed = remove || removed;
+            }
         }
         return removed;
     }
@@ -114,7 +125,7 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
     public void clear() {
         mViewModels.clear();
         if (mObserver != null) {
-            mObserver.onDataSetChange();
+            mObserver.onDataSetChange(this);
         }
     }
 
@@ -135,16 +146,17 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
     public void add(int i, BaseViewModel baseViewModel) {
         mViewModels.add(i, baseViewModel);
         if (mObserver != null) {
-            mObserver.onInserted(i);
+            mObserver.onInserted(i, baseViewModel);
         }
     }
 
     @Override
     public BaseViewModel remove(int i) {
+        BaseViewModel viewModel = mViewModels.remove(i);
         if (mObserver != null) {
-            mObserver.onRemoved(i);
+            mObserver.onRemoved(i, viewModel);
         }
-        return mViewModels.remove(i);
+        return viewModel;
     }
 
     @Override
