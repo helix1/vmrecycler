@@ -11,10 +11,25 @@ import java.util.ListIterator;
 public abstract class ViewModelCollection implements List<BaseViewModel> {
 
     private List<BaseViewModel> mViewModels = new ArrayList<>();
+    private ViewTypes mViewTypes = new ViewTypes();
     private VMObserver mObserver;
 
     void setObserver(VMObserver observer) {
         mObserver = observer;
+    }
+
+    public int getViewType(int position) {
+        return mViewTypes.getViewType(mViewModels.get(position));
+    }
+
+    public BaseViewModel getViewModelFromType(int viewType) {
+        Class c = mViewTypes.keyAt(viewType);
+        for (int i = 0; i < size(); i++) {
+            if (get(i).getClass().equals(c)) {
+                return get(i);
+            }
+        }
+        return null;
     }
 
     @Override
@@ -54,8 +69,11 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
     @Override
     public boolean add(BaseViewModel baseViewModel) {
         boolean added = mViewModels.add(baseViewModel);
-        if (added && mObserver != null) {
-            mObserver.onInserted(mViewModels.size() - 1, baseViewModel);
+        if (added) {
+            mViewTypes.add(baseViewModel);
+            if (mObserver != null) {
+                mObserver.onItemInserted(mViewModels.size() - 1);
+            }
         }
         return added;
     }
@@ -67,8 +85,11 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
         }
         int index = mViewModels.indexOf(o);
         boolean removed = mViewModels.remove(o);
-        if (removed && mObserver != null) {
-            mObserver.onRemoved(index, (BaseViewModel) o);
+        if (removed) {
+            mViewTypes.remove((BaseViewModel) o);
+            if (mObserver != null) {
+                mObserver.onItemRemoved(index);
+            }
         }
         return removed;
     }
@@ -125,7 +146,7 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
     public void clear() {
         mViewModels.clear();
         if (mObserver != null) {
-            mObserver.onDataSetChange(this);
+            mObserver.onDataSetChange();
         }
     }
 
@@ -137,7 +158,7 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
     @Override
     public BaseViewModel set(int i, BaseViewModel baseViewModel) {
         if (mObserver != null) {
-            mObserver.onChange(i);
+            mObserver.onItemChanged(i);
         }
         return mViewModels.set(i, baseViewModel);
     }
@@ -145,16 +166,18 @@ public abstract class ViewModelCollection implements List<BaseViewModel> {
     @Override
     public void add(int i, BaseViewModel baseViewModel) {
         mViewModels.add(i, baseViewModel);
+        mViewTypes.add(baseViewModel);
         if (mObserver != null) {
-            mObserver.onInserted(i, baseViewModel);
+            mObserver.onItemInserted(i);
         }
     }
 
     @Override
     public BaseViewModel remove(int i) {
         BaseViewModel viewModel = mViewModels.remove(i);
+        mViewTypes.remove(viewModel);
         if (mObserver != null) {
-            mObserver.onRemoved(i, viewModel);
+            mObserver.onItemRemoved(i);
         }
         return viewModel;
     }

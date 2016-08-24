@@ -1,8 +1,8 @@
 package io.agileninja.vmrecycler;
 
 public interface VMObserver {
-    void onChange(int index);
-    void onInserted(int index, BaseViewModel viewModel);
-    void onRemoved(int index, BaseViewModel viewModel);
-    void onDataSetChange(ViewModelCollection viewModelCollection);
+    void onItemChanged(int index);
+    void onItemInserted(int index);
+    void onItemRemoved(int index);
+    void onDataSetChange();
 }
